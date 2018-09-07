@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Passwords</title>
+    </head>
+    <body>
+        <h1>Passwords</h1>
+		
+		<div id="logsDiv"></div>
+
+        <table>
+			<thead>
+				<th>Nom</th>
+				<th>Hash</th>
+				<th>User</th>
+				<th>Notes</th>
+			</thead>
+			<tbody id="pwdTableBody">
+			</tbody>
+		</table>
+		
+		
+		<input id="adminPasswordTextfield" type="text" />
+		
+		<button onclick='askConnection();'>Connect</button>
+
+        <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            var socket = io.connect('http://localhost:8080');
+			var allPasswords = [];
+			
+			
+			///////////////////////////////////
+			// Commands received from server //
+			///////////////////////////////////
+			
+			// Update the allPasswords variable
+			socket.on('tocli_allPasswords', function(allPasswordsList) {
+				allPasswords = allPasswordsList;
+				refreshGUI();
+			});
+			
+            // Messages from server
+            socket.on('tocli_message', function(message) {
+                addLogToDiv('LOG : ' + message);
+            });
+			socket.on('tocli_error', function(message) {
+                addLogToDiv('ERROR : ' + message, "color:red; font-weight: bold;");
+            });
+			socket.on('tocli_success', function(message) {
+                addLogToDiv('SUCCESS : ' + message, "color:lime; font-weight: bold;");
+            });
+			
+			// On admin connection success
+			socket.on('tocli_onConnectionSuccess'), function() {
+				
+			}
+			
+			/////////// FUNCTIONS ///////////
+			
+			function refreshGUI() {
+				// Passwords list
+				$('#pwdTableBody').empty();
+				allPasswords.forEach(item => {
+					$('#pwdTableBody')
+						.append('<tr>')
+						.append('<td>' + item.name + '</td>')
+						.append('<td>' + item.hash + '</td>')
+						.append('<td>' + item.username + '</td>')
+						.append('<td>' + item.notes + '</td>')
+						.append('</tr>');
+				});
+			}
+			
+			function addLogToDiv(log, style) {
+				if(!style) {
+					style = "";
+				}
+				$('#logsDiv').empty();
+				$('#logsDiv').append("<p style='" + style + "'>" + log + "</p>");
+			}
+			
+			/////////////////////////////////
+			// Requests made to the server //
+			/////////////////////////////////
+			
+			function askConnection() {
+				socket.emit('toserv_askConnection', $("#adminPasswordTextfield").val());
+			}
+			
+        </script>
+    </body>
+</html>
