@@ -1,5 +1,3 @@
-// functions.js
-
 module.exports = {
 
 	loadAllPasswords: function(db, callback) {
@@ -9,7 +7,7 @@ module.exports = {
 }
 
 
-/* Executes query, then do callback */
+/* Executes query, then does callback */
 function doQuery(query, db, callback) {
 	db.any(query)
 		.then( function(data) {

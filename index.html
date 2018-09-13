@@ -6,7 +6,15 @@
     </head>
     <body>
         <h1>Passwords</h1>
-		
+
+		<div id="divNotConnected">
+			<input id="adminPasswordTextfield" type="password" title="Master password"/>
+			<button onclick='askConnection();'>Connect</button>
+		</div>
+		<div id="divConnected" style="display:none;">
+			<span>You are connected !</span>
+			<button onclick='askDisconnection();'>Disconnect</button>
+		</div>
 		<div id="logsDiv"></div>
 
         <table>
@@ -19,11 +27,7 @@
 			<tbody id="pwdTableBody">
 			</tbody>
 		</table>
-		
-		
-		<input id="adminPasswordTextfield" type="text" />
-		
-		<button onclick='askConnection();'>Connect</button>
+
 
         <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
         <script src="/socket.io/socket.io.js"></script>
@@ -31,6 +35,7 @@
             var socket = io.connect('http://localhost:8080');
 			var allPasswords = [];
 			
+			var pbkdf2 = require('./pbkdf2');
 			
 			///////////////////////////////////
 			// Commands received from server //
@@ -44,21 +49,29 @@
 			
             // Messages from server
             socket.on('tocli_message', function(message) {
-                addLogToDiv('LOG : ' + message);
+                addLogToDiv(message);
             });
 			socket.on('tocli_error', function(message) {
-                addLogToDiv('ERROR : ' + message, "color:red; font-weight: bold;");
+                addLogToDiv(message, "color:red; font-weight: bold;");
             });
 			socket.on('tocli_success', function(message) {
-                addLogToDiv('SUCCESS : ' + message, "color:lime; font-weight: bold;");
+                addLogToDiv(message, "color:lime; font-weight: bold;");
             });
 			
 			// On admin connection success
-			socket.on('tocli_onConnectionSuccess'), function() {
-				
-			}
+			socket.on('tocli_onConnectionOK', function() {
+				$('#divNotConnected').hide();
+				$('#divConnected').show();
+			});
+			// On admin disconnect success
+			socket.on('tocli_onDisconnectionOK', function() {
+				$('#divConnected').hide();
+				$('#divNotConnected').show();
+			});
 			
+			/////////////////////////////////
 			/////////// FUNCTIONS ///////////
+			/////////////////////////////////
 			
 			function refreshGUI() {
 				// Passwords list
@@ -72,15 +85,16 @@
 						.append('<td>' + item.notes + '</td>')
 						.append('</tr>');
 				});
-			}
+			};
 			
 			function addLogToDiv(log, style) {
 				if(!style) {
 					style = "";
 				}
+				console.log(log);
 				$('#logsDiv').empty();
 				$('#logsDiv').append("<p style='" + style + "'>" + log + "</p>");
-			}
+			};
 			
 			/////////////////////////////////
 			// Requests made to the server //
@@ -88,7 +102,10 @@
 			
 			function askConnection() {
 				socket.emit('toserv_askConnection', $("#adminPasswordTextfield").val());
-			}
+			};
+			function askDisconnection() {
+				socket.emit('toserv_askDisconnection');
+			};
 			
         </script>
     </body>
