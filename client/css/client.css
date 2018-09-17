@@ -9,8 +9,8 @@
 	font-size: 16px;
 	margin: 4px 2px;
 	cursor: pointer;
-	-webkit-transition-duration: 0.4s; /* Safari */
-    transition-duration: 0.4s;
+	-webkit-transition-duration: 0.2s; /* Safari */
+    transition-duration: 0.2s;
 }
 
 .buttonPopin {
@@ -20,21 +20,20 @@
 }
 
 .buttonPopin:hover {
-    background-color: rgb(50, 50, 128);
-    color: white;
+    background-color: rgb(196, 220, 255);
+    color: black;
 }
 
-.buttonGray {
+.buttonNormal {
 	background-color: rgb(172, 210, 255);
 	color: black;
 	border: 1px solid black;
 }
 
-.buttonGray:hover {
-    background-color: rgb(100, 100, 100);
+.buttonNormal:hover {
+    background-color: rgb(142, 180, 255);
     color: white;
 }
-
 
 div#divConnected {
 	display: none;
@@ -158,4 +157,32 @@ input.pwdInput {
     color: #000;
     text-decoration: none;
     cursor: pointer;
+}
+
+div.block {
+	display: inline-block;
+	margin: 5px 0px;
+}
+
+div#formUpsert label {
+	text-align: right;
+	float: left;
+	width: 145px;
+}
+
+div#formUpsert input {
+	margin-left: 10px;
+	box-sizing: border-box;
+	border: 1px solid black;
+}
+
+div#formUpsert input.invalid {
+	border: 2px solid red;
+}
+
+invalid {
+	display: inline-block;
+	color: red;
+	font-weight: bold;
+	margin-left: 160px;
 }

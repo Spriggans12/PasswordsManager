@@ -37,6 +37,11 @@ var serverSalt = properties.get('server.salt')
 var decryptedDummyText = properties.get('security.dummyText');
 var encryptedDummyText = properties.get('security.dummyTextEncrypted');
 
+
+///////////////////////////////////
+// Requests received from client //
+///////////////////////////////////
+
 io.sockets.on('connection', function (socket) {
 	initializeSocket(socket);
 	
@@ -73,7 +78,8 @@ io.sockets.on('connection', function (socket) {
 		});
 	});
 	
-	// Encrypts decryptedDummyText using the server salt and the providedPassword. Gives it back to client for console.logging
+	// Encrypts decryptedDummyText using the server salt and the providedPassword
+	// Gives it back to client for console.logging
 	socket.on('toserv_encryptStringTest', function(providedPassword) {
 		encrypt(decryptedDummyText, providedPassword, (encryptedData) => {
 			socket.emit('tocli_encryptStringTestResult', encryptedData);
@@ -92,16 +98,38 @@ io.sockets.on('connection', function (socket) {
 					// Send new password list to client
 					socket.emit('tocli_allPasswords', allPasswordsList);
 				});
+				socket.emit('tocli_success', 'Password has been removed.');
 			});
+		}
+	});
+	
+	// Password creation ask
+	socket.on('toserv_createPassword', function(data) {
+		if(socket.status == 'disconnected') {
+			socket.emit('tocli_error', 'You are not connected !');
+		} else {
+			// Test if provided data are correct
+			var validation = validatePasswordUpsert(data);
+			
+			if(validation.valid) {
+				// TODO create
+				console.log('TIME TO DO SOME MAGIC !');
+			} else {
+				socket.emit('tocli_invalidForm', validation.errors);
+			}
 		}
 	});
 });
 
 server.listen(8080);
 
+
+/////////////////////////////////
+/////////// FUNCTIONS ///////////
+/////////////////////////////////
+
 function initializeSocket(socket) {
 	socket.status = 'disconnected';
-	
 	// On connection, give client the passwords list
     socket.emit('tocli_allPasswords', allPasswordsList);
 }
@@ -140,4 +168,48 @@ function encrypt(plainData, password, callback) {
 		var encryptedData = security.encrypt(plainData, hash2);
 		callback(encryptedData);
 	});
+}
+
+function validatePasswordUpsert(data) {
+	var valid = true;
+	var errors = [];
+	
+	// Check mandatory fields
+	if(!data.name) {
+		valid = pushErrorInvalid(errors, 'name', 'This field is mandatory');
+	}
+	if(!data.pass) {
+		valid = pushErrorInvalid(errors, 'pass', 'This field is mandatory');
+	}
+	if(!data.confPass) {
+		valid = pushErrorInvalid(errors, 'confPass', 'This field is mandatory');
+	}
+	
+	if(valid) {
+		if(!(data.pass == data.confPass)) {
+			pushErrorInvalid(errors, 'pass');
+			valid = pushErrorInvalid(errors, 'confPass', 'The passwords don\'t match');
+		}
+	}
+	
+	// Check max Size
+	if(data.name.length > 255) {
+		valid = pushErrorInvalid(errors, 'name', 'This field is too long');
+	}
+	if(data.username.length > 255) {
+		valid = pushErrorInvalid(errors, 'username', 'This field is too long');
+	}
+	if(data.notes.length > 255) {
+		valid = pushErrorInvalid(errors, 'notes', 'This field is too long');
+	}
+	
+	return {
+		valid: valid,
+		errors: errors
+	};
+}
+
+function pushErrorInvalid(errors, name, cause) {
+	errors.push({ field: name, cause: cause });
+	return false;
 }

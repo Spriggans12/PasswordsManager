@@ -2,6 +2,7 @@ var socket = io.connect('http://localhost:8080');
 var allPasswords = [];
 var QUESTION_MARKS = '??????????';
 var connected = false;
+var FORM_IDS = ['f_name', 'f_pass', 'f_confPass', 'f_username', 'f_notes'];
 
 
 ///////////////////////////////////
@@ -55,6 +56,21 @@ socket.on('tocli_encryptStringTestResult', function(encryptedData) {
 	console.log(encryptedData);
 });
 
+// Server response about invalid form
+socket.on('tocli_invalidForm', function(errors) {
+	// Cleanup previous errors
+	$('input').removeClass('invalid');
+	$('invalid').remove();
+	// Add new errors
+	errors.forEach(error => {
+		
+		$('#f_' + error.field).addClass('invalid');
+		if(error.cause) {
+			$('#f_' + error.field).parent().append('<invalid>' + error.cause + '</invalid>');
+		}
+	});
+});
+
 
 /////////////////////////////////
 // Requests made to the server //
@@ -80,6 +96,9 @@ function askDeletePassword(id) {
 	socket.emit('toserv_deletePassword', id);
 };
 
+function askPasswordCreation(data) {
+	socket.emit('toserv_createPassword', data);
+};
 
 /////////////////////////////////
 /////////// FUNCTIONS ///////////
@@ -113,8 +132,8 @@ function tdPassword(id, value) {
 
 function tdActions(id) {
 	return '<td class="centeredTD">' + 
-		'<modify onclick="popUpModification(' + id + ');" title="Change this password">&#x1F58A;</modify>' +
-		'<delete onclick="popUpConfirmDeletion(' + id + ');" title="Delete this password">&#x1F5D1;</delete>' +
+		'<modify onclick="popInModification(' + id + ');" title="Change this password">&#x1F58A;</modify>' +
+		'<delete onclick="popInConfirmDeletion(' + id + ');" title="Delete this password">&#x1F5D1;</delete>' +
 		'</td>';
 };
 
@@ -186,7 +205,7 @@ function initPopinComponents(popInContent, popIn) {
 
 
 // Confirmation popin of password deletion
-function popUpConfirmDeletion(id) {
+function popInConfirmDeletion(id) {
 	var pwdName = $('#pwdname' + id).text();
 	var title = 'Confirm deletion';
 	var bodyHtml = '<p>Are you sure you want to delete this password ?<br/><br/>' +
@@ -194,13 +213,58 @@ function popUpConfirmDeletion(id) {
 			'You will not be able to recover the password once deleted !</p>'
 	var footerHtml = '<button class="button buttonPopin" id="abortDeletion">Abort</button><button class="button buttonPopin" id="deletePassword">Delete</button>'
 	var initialization = function() {
+		$('#abortDeletion').click(function() {
+			$('#popin').hide();
+		});
+		// Send deletion request
 		$('#deletePassword').click(function() {
 			askDeletePassword(id);
 			$('#popin').hide();
 		});
-		$('#abortDeletion').click(function() {
+	};
+	createAndShowPopin(title, bodyHtml, footerHtml, initialization);
+}
+
+function popInCreation() {
+	var title = 'Create a new password';
+	var bodyHtml = makeFormBody();
+	var footerHtml = '<button class="button buttonPopin" id="abortCreation">Abort</button><button class="button buttonPopin" id="confirmCreation">Create</button>'
+	var initialization = function() {
+		$('#abortCreation').click(function() {
 			$('#popin').hide();
+		});
+		// Send creation request
+		$('#confirmCreation').click(function() {
+			var data = getDataFromForm();
+			askPasswordCreation(data);
 		});
 	};
 	createAndShowPopin(title, bodyHtml, footerHtml, initialization);
+}
+
+function makeFormBody() {
+	return '<div id="formUpsert">' +
+			labelAndInput('Name : ', FORM_IDS[0], 'text') +
+			labelAndInput('Password : ', FORM_IDS[1], 'password') +
+			labelAndInput('Confirm password : ', FORM_IDS[2], 'password') +
+			labelAndInput('Username : ', FORM_IDS[3], 'text') +
+			labelAndInput('Notes : ', FORM_IDS[4], 'text') +
+		'</div>';
+}
+
+function labelAndInput(label, inputId, inputType) {
+	return '<div class="block">' +
+		'<label>' + label + '</label>' +
+		'<input id="' + inputId + '" type="' + inputType + '"/>' +
+		'</div>';
+}
+
+function getDataFromForm() {
+	return {
+		name: $('#' + FORM_IDS[0]).val(),
+		pass: $('#' + FORM_IDS[1]).val(),
+		confPass: $('#' + FORM_IDS[2]).val(),
+		username: $('#' + FORM_IDS[3]).val(),
+		notes: $('#' + FORM_IDS[4]).val()
+	};
 }
