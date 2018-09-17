@@ -3,110 +3,37 @@
     <head>
         <meta charset="utf-8" />
         <title>Passwords</title>
+		<link rel="stylesheet" href="css/client.css" type="text/css" />
     </head>
     <body>
-        <h1>Passwords</h1>
+		<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+		<script src="js/client.js"></script>
+		
+        <h2>Passwords manager</h2>
+		
+		<div id="logsDiv"></div>
 
 		<div id="divNotConnected">
 			<input id="adminPasswordTextfield" type="password" title="Master password"/>
 			<button onclick='askConnection();'>Connect</button>
 		</div>
-		<div id="divConnected" style="display:none;">
+		<div id="divConnected">
 			<span>You are connected !</span>
 			<button onclick='askDisconnection();'>Disconnect</button>
+			<button onclick='popUpCreation();'>Create a new password</button>
 		</div>
-		<div id="logsDiv"></div>
 
         <table>
 			<thead>
-				<th>Nom</th>
-				<th>Hash</th>
+				<th>Name</th>
+				<th>Password</th>
 				<th>User</th>
 				<th>Notes</th>
+				<th>Actions</th>
 			</thead>
 			<tbody id="pwdTableBody">
 			</tbody>
 		</table>
-
-
-        <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
-        <script src="/socket.io/socket.io.js"></script>
-        <script>
-            var socket = io.connect('http://localhost:8080');
-			var allPasswords = [];
-			
-			var pbkdf2 = require('./pbkdf2');
-			
-			///////////////////////////////////
-			// Commands received from server //
-			///////////////////////////////////
-			
-			// Update the allPasswords variable
-			socket.on('tocli_allPasswords', function(allPasswordsList) {
-				allPasswords = allPasswordsList;
-				refreshGUI();
-			});
-			
-            // Messages from server
-            socket.on('tocli_message', function(message) {
-                addLogToDiv(message);
-            });
-			socket.on('tocli_error', function(message) {
-                addLogToDiv(message, "color:red; font-weight: bold;");
-            });
-			socket.on('tocli_success', function(message) {
-                addLogToDiv(message, "color:lime; font-weight: bold;");
-            });
-			
-			// On admin connection success
-			socket.on('tocli_onConnectionOK', function() {
-				$('#divNotConnected').hide();
-				$('#divConnected').show();
-			});
-			// On admin disconnect success
-			socket.on('tocli_onDisconnectionOK', function() {
-				$('#divConnected').hide();
-				$('#divNotConnected').show();
-			});
-			
-			/////////////////////////////////
-			/////////// FUNCTIONS ///////////
-			/////////////////////////////////
-			
-			function refreshGUI() {
-				// Passwords list
-				$('#pwdTableBody').empty();
-				allPasswords.forEach(item => {
-					$('#pwdTableBody')
-						.append('<tr>')
-						.append('<td>' + item.name + '</td>')
-						.append('<td>' + item.hash + '</td>')
-						.append('<td>' + item.username + '</td>')
-						.append('<td>' + item.notes + '</td>')
-						.append('</tr>');
-				});
-			};
-			
-			function addLogToDiv(log, style) {
-				if(!style) {
-					style = "";
-				}
-				console.log(log);
-				$('#logsDiv').empty();
-				$('#logsDiv').append("<p style='" + style + "'>" + log + "</p>");
-			};
-			
-			/////////////////////////////////
-			// Requests made to the server //
-			/////////////////////////////////
-			
-			function askConnection() {
-				socket.emit('toserv_askConnection', $("#adminPasswordTextfield").val());
-			};
-			function askDisconnection() {
-				socket.emit('toserv_askDisconnection');
-			};
-			
-        </script>
     </body>
 </html>

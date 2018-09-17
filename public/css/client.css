@@ -1,0 +1,58 @@
+div#divConnected {
+	display: none;
+	padding-bottom: 50px;
+}
+
+div#divNotConnected {
+	width: 300px;
+	padding-bottom: 50px;
+}
+
+key, eye, modify, delete {
+	display: none;
+	margin: 0px 2px;
+	cursor: pointer;
+}
+
+.redTextBold {
+	color: red;
+	font-weight: bold;
+}
+
+.limeTextBold {
+	color: lime;
+	font-weight: bold;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid black;
+}
+
+td.centeredTD {
+	text-align: center;
+}
+
+th, td {
+	padding: 0px 3px;
+}
+
+th {
+	background-color: #f0f0f0;
+}
+
+tr:nth-child(even) {
+	background-color: #f2f2f2;
+}
+
+tr:nth-child(odd) {
+	background-color: #ffffff;
+}
+
+input.pwdInput {
+	background: transparent;
+    border: none;
+}

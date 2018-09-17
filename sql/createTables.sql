@@ -12,4 +12,9 @@ WITH (
   OIDS = FALSE
 );
 
+ALTER table public.passwords
+  OWNER TO passwd;
+
 CREATE SEQUENCE public.sq_pwd;
+ALTER SEQUENCE sq_pwd
+  OWNER TO passwd;
