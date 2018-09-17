@@ -58,7 +58,7 @@ io.sockets.on('connection', function (socket) {
 	// Admin disconnection ask
 	socket.on('toserv_askDisconnection', function() {
 		socket.status = 'disconnected';
-		socket.emit('tocli_success', 'You are no longer connected.');
+		socket.emit('tocli_message', 'You are no longer connected.');
 		socket.emit('tocli_onDisconnectionOK');
 	});
 	

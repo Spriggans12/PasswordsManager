@@ -1,3 +1,41 @@
+.button {
+	background-color: #4CAF50;
+	border: none;
+	color: white;
+	padding: 5px 20px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-size: 16px;
+	margin: 4px 2px;
+	cursor: pointer;
+	-webkit-transition-duration: 0.4s; /* Safari */
+    transition-duration: 0.4s;
+}
+
+.buttonPopin {
+	background-color: white;
+	color: black;
+	border: 1px solid black;
+}
+
+.buttonPopin:hover {
+    background-color: rgb(50, 50, 128);
+    color: white;
+}
+
+.buttonGray {
+	background-color: rgb(172, 210, 255);
+	color: black;
+	border: 1px solid black;
+}
+
+.buttonGray:hover {
+    background-color: rgb(100, 100, 100);
+    color: white;
+}
+
+
 div#divConnected {
 	display: none;
 	padding-bottom: 50px;
@@ -19,8 +57,12 @@ key, eye, modify, delete {
 	font-weight: bold;
 }
 
-.limeTextBold {
-	color: lime;
+.greenTextBold {
+	color: rgb(0, 196, 0);
+	font-weight: bold;
+}
+
+.bold {
 	font-weight: bold;
 }
 
@@ -36,23 +78,84 @@ td.centeredTD {
 	text-align: center;
 }
 
-th, td {
-	padding: 0px 3px;
+td {
+	padding: 3px 6px;
 }
 
 th {
-	background-color: #f0f0f0;
+	background-color: rgb(142, 180, 255);
+	padding: 6px 6px;
 }
 
 tr:nth-child(even) {
-	background-color: #f2f2f2;
+	background-color: rgb(172, 210, 255);
 }
 
 tr:nth-child(odd) {
-	background-color: #ffffff;
+	background-color: rgb(255, 255, 255);
 }
 
 input.pwdInput {
 	background: transparent;
     border: none;
+}
+
+/* Makes the background blured */
+.popin {
+	display: none;
+	position: fixed;
+    z-index: 1;
+    padding-top: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+}
+
+/* The popin's content */
+.popin-content {
+	position: relative;
+    background-color: #fefefe;
+    margin: auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 400px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+	border: 1px solid black;
+}
+
+.popin-header {
+    padding: 2px 16px;
+    background-color: rgb(142, 180, 255);
+    color: white;
+	border-bottom: 1px solid black;
+}
+
+.popin-body {
+	padding: 2px 16px;
+}
+
+.popin-footer {
+    padding: 2px 16px;
+    background-color: rgb(142, 180, 255);
+    color: white;
+	border-top: 1px solid black;
+}
+
+/* The Close Button of the popin */
+.popin-close {
+    color: white;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+	margin-top: 14px;
+}
+
+.popin-close:hover, .popin-close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
 }

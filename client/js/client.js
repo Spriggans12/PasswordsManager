@@ -16,13 +16,13 @@ socket.on('tocli_allPasswords', function(allPasswordsList) {
 
 // Messages from server
 socket.on('tocli_message', function(message) {
-	addLogToDiv(message);
+	logOnPopin(message, null, 'Message');
 });
 socket.on('tocli_error', function(message) {
-	addLogToDiv(message, 'redTextBold');
+	logOnPopin(message, 'redTextBold', 'Error');
 });
 socket.on('tocli_success', function(message) {
-	addLogToDiv(message, 'limeTextBold');
+	logOnPopin(message, 'greenTextBold', 'Message');
 });
 
 // On admin connection success
@@ -90,7 +90,7 @@ function resetPwdList() {
 	$('#pwdTableBody').empty();
 	allPasswords.forEach(item => {
 		$('#pwdTableBody').append('<tr>' +
-			'<td>' + item.name + '</td>' +
+			'<td id="pwdname' + item.id + '">' + item.name + '</td>' +
 			tdPassword(item.id, QUESTION_MARKS) +
 			'<td>' + item.username + '</td>' +
 			'<td>' + item.notes + '</td>' +
@@ -134,12 +134,73 @@ function showConnectedOnlyStuffs() {
 	$('delete').show();
 }
 
-function addLogToDiv(log, clazz) {
+function logOnPopin(log, clazz, title) {
 	if(!clazz) {
-		clazz = "";
+		clazz = "bold";
 	}
 	console.log(log);
-	$('#logsDiv').empty();
-	$('#logsDiv').append("<p class='" + clazz + "'>" + log + "</p>");
+	var bodyHtml = "<p class='" + clazz + "'>" + log + "</p>";
+	var footerHtml = "<button class='button buttonPopin' id='closeButton'>OK</button>";
+	var initialization = function() {
+		$('#closeButton').click(function() {
+			$('#popin').hide();
+		});
+	};
+	createAndShowPopin(title, bodyHtml, footerHtml, initialization);
 };
 
+function createAndShowPopin(title, bodyHtml, footerHtml, initialization) {
+	var popIn = $('#popin');
+	var popInContent = $('#popin-content');
+	initPopinComponents(popInContent, popIn);
+	// Sets title
+	$('#popin-title').text(title);
+	// Sets body's content
+	$('#popin-body').append(bodyHtml);
+	// Sets footer's content
+	$('#popin-footer').append(footerHtml);
+	// Calls the passed-in initialization function
+	initialization();
+	// Shows
+	popIn.show();
+};
+
+// Resets the popin divs. Initializes popin-header, popin-body and popin-footer with empty values.
+function initPopinComponents(popInContent, popIn) {
+	popInContent.empty();
+	// Header
+	popInContent.append('<div id="popin-header" class="popin-header"><span id="popin-close" title="Close" class="popin-close">&times;</span><h3 id="popin-title"></h3></div>');
+	// Body
+	popInContent.append('<div id="popin-body" class="popin-body"></div>');
+	// Footer
+	popInContent.append('<div id="popin-footer" class="popin-footer"></div>');
+	// Makes clicking on X close the popin
+	$('#popin-close').click(() => { popIn.hide(); });
+	// When the user clicks anywhere outside of the popin, close it	
+	$("body").click(function(event) {
+		if (event.target.id == popIn.attr('id')) {
+			popIn.hide();
+		}
+	});
+};
+
+
+// Confirmation popin of password deletion
+function popUpConfirmDeletion(id) {
+	var pwdName = $('#pwdname' + id).text();
+	var title = 'Confirm deletion';
+	var bodyHtml = '<p>Are you sure you want to delete this password ?<br/><br/>' +
+			'<b>' + pwdName + '</b><br/><br/>' + 
+			'You will not be able to recover the password once deleted !</p>'
+	var footerHtml = '<button class="button buttonPopin" id="abortDeletion">Abort</button><button class="button buttonPopin" id="deletePassword">Delete</button>'
+	var initialization = function() {
+		$('#deletePassword').click(function() {
+			askDeletePassword(id);
+			$('#popin').hide();
+		});
+		$('#abortDeletion').click(function() {
+			$('#popin').hide();
+		});
+	};
+	createAndShowPopin(title, bodyHtml, footerHtml, initialization);
+}

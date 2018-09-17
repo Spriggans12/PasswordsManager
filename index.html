@@ -11,12 +11,10 @@
 		<script src="js/client.js"></script>
 		
         <h2>Passwords manager</h2>
-		
-		<div id="logsDiv"></div>
 
 		<div id="divNotConnected">
 			<input id="adminPasswordTextfield" type="password" title="Master password"/>
-			<button onclick='askConnection();'>Connect</button>
+			<button class="button buttonGray" onclick='askConnection();'>Connect</button>
 		</div>
 		<div id="divConnected">
 			<span>You are connected !</span>
@@ -35,5 +33,10 @@
 			<tbody id="pwdTableBody">
 			</tbody>
 		</table>
+		
+		<div id="popin" class="popin">
+			<div id="popin-content" class="popin-content">
+			</div>
+		</div>
     </body>
 </html>
