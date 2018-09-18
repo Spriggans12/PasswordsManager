@@ -4,7 +4,6 @@ var QUESTION_MARKS = '??????????';
 var connected = false;
 var FORM_IDS = ['f_name', 'f_pass', 'f_confPass', 'f_username', 'f_notes'];
 
-
 ///////////////////////////////////
 // Commands received from server //
 ///////////////////////////////////
@@ -30,6 +29,7 @@ socket.on('tocli_success', function(message) {
 socket.on('tocli_onConnectionOK', function() {
 	$('#divNotConnected').hide();
 	$('#divConnected').show();
+	document.activeElement.blur();
 	showConnectedOnlyStuffs();
 	connected = true;
 });
@@ -84,7 +84,17 @@ function askDisconnection() {
 };
 
 function askDecryptOnePassword(id) {
-	socket.emit('toserv_decryptPass', id, $("#adminPasswordTextfield").val());
+	var crypted = $('#key' + id).attr('crypted');
+	if(crypted === "true") {
+		$('#key' + id).attr('crypted', "false");
+		$('#key' + id).attr('title', "Re-encrypt");
+		socket.emit('toserv_decryptPass', id, $("#adminPasswordTextfield").val());
+	} else {
+		$('#key' + id).attr('crypted', "true");
+		$('#key' + id).attr('title', "Decrypt");
+		$("#pwd" + id).val(QUESTION_MARKS);
+		$("#pwd" + id).get(0).type = 'text';
+	}
 };
 
 // encryption string test
@@ -108,19 +118,46 @@ function askPasswordUpdate(data) {
 /////////// FUNCTIONS ///////////
 /////////////////////////////////
 
+// Make escape button press close the popin
+$(document).keypress(function(e) {
+	if (e.keyCode == 27) {
+		clearAndHidePopin();
+	}
+});
+
+// Detect enter button presses
+$(document).keypress(function(e) {
+    if (e.keyCode == 13) {
+		// If there is a #closeButton button, trigger it
+		if($('#closeButton').length > 0) {
+			$('#closeButton').trigger('click');
+			e.stopPropagation();
+			return;
+		}
+		// Otherwize, trigger Connection button or Upsert button
+		var active = $(document.activeElement);
+		if(active.hasClass('triggerConnect')) {
+			$('#btnConnect').trigger('click');
+			e.stopPropagation();
+		} else if(active.hasClass('triggerUpsert')) {
+			$('#confirmUpsert').trigger('click');
+			e.stopPropagation();
+		}
+    }
+});
+
 function resetPwdList() {
 	// Passwords list
 	$('#pwdTableBody').empty();
 	allPasswords.forEach(item => {
 		$('#pwdTableBody').append('<tr>' +
 			'<td id="pwdname' + item.id + '">' + item.name + '</td>' +
-			tdPassword(item.id, QUESTION_MARKS) +
 			'<td id="pwdUser' + item.id + '">' + item.username + '</td>' +
+			tdPassword(item.id, QUESTION_MARKS) +
 			'<td id="pwdNotes' + item.id + '">' + item.notes + '</td>' +
 			tdActions(item.id) +
 			'</tr>');
 	});
-	
 	if(connected) {
 		showConnectedOnlyStuffs();
 	}
@@ -129,7 +166,7 @@ function resetPwdList() {
 function tdPassword(id, value) {
 	return '<td>' + 
 		'<input class="pwdInput" id="pwd' + id + '" value=' + value + ' readonly="true"></input>' +
-		'<key onclick="askDecryptOnePassword(' + id + ');" title="Decrypt">&#x1f511;</key>' +
+		'<key id="key' + id + '" crypted="true" onclick="askDecryptOnePassword(' + id + ');" title="Decrypt">&#x1f511;</key>' +
 		'<eye onclick="toggleVisibility(' + id + ');" title="Toggle visibility">&#x1f441;</eye>' +
 		'</td>';
 };
@@ -142,6 +179,11 @@ function tdActions(id) {
 };
 
 function toggleVisibility(id) {
+	var crypted = $('#key' + id).attr('crypted');
+	if(crypted === "true") {
+		// Don't toggle if password is '??????'
+		return;
+	}
 	var pwd = $("#pwd" + id);
 	if(pwd.get(0).type == 'password') {
 		pwd.get(0).type = 'text';
@@ -166,7 +208,7 @@ function logOnPopin(log, clazz, title) {
 	var footerHtml = "<button class='button buttonPopin' id='closeButton'>OK</button>";
 	var initialization = function() {
 		$('#closeButton').click(function() {
-			$('#popin').hide();
+			clearAndHidePopin();
 		});
 	};
 	createAndShowPopin(title, bodyHtml, footerHtml, initialization);
@@ -198,15 +240,22 @@ function initPopinComponents(popInContent, popIn) {
 	// Footer
 	popInContent.append('<div id="popin-footer" class="popin-footer"></div>');
 	// Makes clicking on X close the popin
-	$('#popin-close').click(() => { popIn.hide(); });
+	$('#popin-close').click(function() {
+		clearAndHidePopin();
+	});
 	// When the user clicks anywhere outside of the popin, close it	
 	$("body").click(function(event) {
 		if (event.target.id == popIn.attr('id')) {
-			popIn.hide();
+			clearAndHidePopin();
 		}
 	});
 };
 
+// Clear the popin's content and hides it
+function clearAndHidePopin() {
+	$('#popin-content').empty();
+	$('#popin').hide();
+}
 
 // Confirmation popin of password deletion
 function popInConfirmDeletion(id) {
@@ -218,12 +267,11 @@ function popInConfirmDeletion(id) {
 	var footerHtml = '<button class="button buttonPopin" id="abortDeletion">Abort</button><button class="button buttonPopin" id="deletePassword">Delete</button>'
 	var initialization = function() {
 		$('#abortDeletion').click(function() {
-			$('#popin').hide();
+			clearAndHidePopin();
 		});
 		// Send deletion request
 		$('#deletePassword').click(function() {
 			askDeletePassword(id);
-			$('#popin').hide();
 		});
 	};
 	createAndShowPopin(title, bodyHtml, footerHtml, initialization);
@@ -232,13 +280,13 @@ function popInConfirmDeletion(id) {
 function popInCreation() {
 	var title = 'Create a new password';
 	var bodyHtml = makeFormBody();
-	var footerHtml = '<button class="button buttonPopin" id="abortCreation">Abort</button><button class="button buttonPopin" id="confirmCreation">Create</button>'
+	var footerHtml = '<button class="button buttonPopin" id="abortCreation">Abort</button><button class="button buttonPopin" id="confirmUpsert">Create</button>'
 	var initialization = function() {
 		$('#abortCreation').click(function() {
-			$('#popin').hide();
+			clearAndHidePopin();
 		});
 		// Send creation request
-		$('#confirmCreation').click(function() {
+		$('#confirmUpsert').click(function() {
 			var data = getDataFromForm();
 			askPasswordCreation(data);
 		});
@@ -255,13 +303,13 @@ function popInModification(id) {
 		notes: $('#pwdNotes' + id).text()
 	};
 	var bodyHtml = makeFormBody(current);
-	var footerHtml = '<button class="button buttonPopin" id="abortUpdate">Abort</button><button class="button buttonPopin" id="confirmUpdate">Update</button>'
+	var footerHtml = '<button class="button buttonPopin" id="abortUpdate">Abort</button><button class="button buttonPopin" id="confirmUpsert">Update</button>'
 	var initialization = function() {
 		$('#abortUpdate').click(function() {
-			$('#popin').hide();
+			clearAndHidePopin();
 		});
 		// Send update request
-		$('#confirmUpdate').click(function() {
+		$('#confirmUpsert').click(function() {
 			var data = getDataFromForm(id);
 			askPasswordUpdate(data);
 		});
@@ -277,11 +325,11 @@ function makeFormBody(currentPassword) {
 	}
 	return '<div id="formUpsert">' +
 			labelAndInput('Name : ', FORM_IDS[0], 'text', currentPassword.name) +
+			labelAndInput('Username : ', FORM_IDS[3], 'text', currentPassword.user) +
 			(formForUpdate?'<div class="updatePasswordDiv"><b>Fill these to specify a new password</b>' :'') +
 			labelAndInput(formForUpdate? 'New password : ' :'Password : ', FORM_IDS[1], 'password') +
 			labelAndInput('Confirm password : ', FORM_IDS[2], 'password') +
 			(formForUpdate?'</div>' :'') +
-			labelAndInput('Username : ', FORM_IDS[3], 'text', currentPassword.user) +
 			labelAndInput('Notes : ', FORM_IDS[4], 'text', currentPassword.notes) +
 		'</div>';
 }
@@ -289,7 +337,7 @@ function makeFormBody(currentPassword) {
 function labelAndInput(label, inputId, inputType, value) {
 	return '<div class="block">' +
 		'<label>' + label + '</label>' +
-		'<input id="' + inputId + '" type="' + inputType + '"' + (value?'value="' + value + '"' :'') + '/>' +
+		'<input id="' + inputId + '" type="' + inputType + '"' + (value?'value="' + value + '"' :'') + ' class="triggerUpsert"/>' +
 		'</div>';
 }
 

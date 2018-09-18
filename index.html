@@ -13,8 +13,8 @@
         <h2>Passwords manager</h2>
 
 		<div id="divNotConnected">
-			<input id="adminPasswordTextfield" type="password" title="Master password"/>
-			<button class="button buttonNormal" onclick='askConnection();'>Connect</button>
+			<input id="adminPasswordTextfield" class="triggerConnect" type="password" title="Master password"/>
+			<button id="btnConnect" class="button buttonNormal" onclick='askConnection();'>Connect</button>
 		</div>
 		<div id="divConnected">
 			<span>You are connected !</span>
@@ -25,8 +25,8 @@
         <table>
 			<thead>
 				<th>Name</th>
+				<th>Username</th>
 				<th>Password</th>
-				<th>User</th>
 				<th>Notes</th>
 				<th>Actions</th>
 			</thead>
