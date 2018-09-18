@@ -27,13 +27,19 @@ var database = require('./server/database');
 var security = require('./server/security');
 var pbkdf2 = require('./server/pbkdf2');
 
+// Constants
+var NOT_CONNECTED = 'You are not connected !';
+var FIELD_MANDATORY = 'This field is mandatory';
+var FIELD_TOO_LONG = 'This field is too long';
+
 // Logic variables
 var allPasswordsList = [];
 
 // Init all the passwords
 database.loadAllPasswords(db, data => { allPasswordsList = data; });
 
-var serverSalt = properties.get('server.salt')
+var adminSalt = properties.get('admin.salt')
+// TODO : make these roll ?
 var decryptedDummyText = properties.get('security.dummyText');
 var encryptedDummyText = properties.get('security.dummyTextEncrypted');
 
@@ -48,7 +54,7 @@ io.sockets.on('connection', function (socket) {
 	// Admin connection ask
 	socket.on('toserv_askConnection', function(providedPassword) {
 		// Test the providedPassword
-		decrypt(encryptedDummyText, providedPassword, (decryptedData) => {
+		decrypt(encryptedDummyText, providedPassword, adminSalt, (decryptedData) => {
 			var correctPassword = (decryptedData == decryptedDummyText);
 			if(correctPassword) {
 				socket.status = 'connected';
@@ -69,7 +75,7 @@ io.sockets.on('connection', function (socket) {
 	
 	// Decrypt one password ask
 	socket.on('toserv_decryptPass', function(id, providedPassword) {
-		decryptTextIfSocketConnected(getEncryptedDataOfPasswordById(id), socket, providedPassword, (decryptedData) => {
+		decryptTextIfSocketConnected(getEncryptedDataAndSaltOfPasswordById(id), socket, providedPassword, (decryptedData) => {
 			var data = {
 				id: id,
 				clearValue: decryptedData
@@ -78,42 +84,106 @@ io.sockets.on('connection', function (socket) {
 		});
 	});
 	
-	// Encrypts decryptedDummyText using the server salt and the providedPassword
-	// Gives it back to client for console.logging
+	// Encrypts decryptedDummyText using a random salt and the providedPassword
+	// Gives back to the client for console.logging the generated salt and the encryptedDummyText
 	socket.on('toserv_encryptStringTest', function(providedPassword) {
-		encrypt(decryptedDummyText, providedPassword, (encryptedData) => {
-			socket.emit('tocli_encryptStringTestResult', encryptedData);
+		var salt = security.randomBytes();
+		encrypt(decryptedDummyText, providedPassword, salt, (encryptedData) => {
+			socket.emit('tocli_encryptStringTestResult', { hash: encryptedData, salt: salt });
 		});
 	});
 	
 	// Delete one password ask
 	socket.on('toserv_deletePassword', function(id) {
 		if(socket.status == 'disconnected') {
-			socket.emit('tocli_error', 'You are not connected !');
+			socket.emit('tocli_error', NOT_CONNECTED);
 		} else {
-			database.removePasswordFromDB(db, id, () => {
+			database.deletePassword(db, id, () => {
 				// Reload passwords list
 				database.loadAllPasswords(db, data => {
 					allPasswordsList = data;
 					// Send new password list to client
 					socket.emit('tocli_allPasswords', allPasswordsList);
 				});
-				socket.emit('tocli_success', 'Password has been removed.');
+				socket.emit('tocli_success', 'The password has been removed.');
 			});
 		}
 	});
 	
 	// Password creation ask
-	socket.on('toserv_createPassword', function(data) {
+	socket.on('toserv_createPassword', function(data, masterPassword) {
 		if(socket.status == 'disconnected') {
-			socket.emit('tocli_error', 'You are not connected !');
+			socket.emit('tocli_error', NOT_CONNECTED);
 		} else {
 			// Test if provided data are correct
-			var validation = validatePasswordUpsert(data);
+			var validation = validatePasswordUpsert(data, true);
 			
 			if(validation.valid) {
-				// TODO create
-				console.log('TIME TO DO SOME MAGIC !');
+				// Create a random salt and encrypts the pass
+				var salt = security.randomBytes();
+				encrypt(data.pass, masterPassword, salt, (encryptedPass) => {
+					var passwordToCreate = {
+						name: data.name,
+						salt: salt,
+						hash: encryptedPass,
+						username: data.username,
+						notes: data.notes
+					};
+					// Persists password to DB
+					database.createPassword(db, passwordToCreate, () => {
+						// Reload passwords list
+						database.loadAllPasswords(db, data => {
+							allPasswordsList = data;
+							// Send new password list to client
+							socket.emit('tocli_allPasswords', allPasswordsList);
+						});
+						socket.emit('tocli_success', 'The password has been succesfully created.');
+					});
+				});
+			} else {
+				socket.emit('tocli_invalidForm', validation.errors);
+			}
+		}
+	});
+	
+	// Password update ask
+	socket.on('toserv_updatePassword', function(data, masterPassword) {
+		if(socket.status == 'disconnected') {
+			socket.emit('tocli_error', NOT_CONNECTED);
+		} else {
+			// Test if provided data are correct
+			var validation = validatePasswordUpsert(data, false);
+			if(validation.valid) {
+				var callbackAfterUpdate = function() {
+					// Reload passwords list
+					database.loadAllPasswords(db, data => {
+						allPasswordsList = data;
+						// Send new password list to client
+						socket.emit('tocli_allPasswords', allPasswordsList);
+					});
+					socket.emit('tocli_success', 'The password has been succesfully updated.');
+				};
+				var passwordToUpdate = {
+					id: data.id,
+					name: data.name,
+					username: data.username,
+					notes: data.notes
+				};
+				if(data.pass) {
+					// Update the salt and hash as well as password fields
+					// Create a random salt and encrypts the pass
+					var salt = security.randomBytes();
+					encrypt(data.pass, masterPassword, salt, (encryptedPass) => {
+						passwordToUpdate.salt = salt;
+						passwordToUpdate.hash = encryptedPass;
+						// Updates password in DB
+						database.updatePassword(db, passwordToUpdate, true, callbackAfterUpdate);
+					});
+				} else {
+					// Only update password fields
+					// Updates password in DB
+					database.updatePassword(db, passwordToUpdate, false, callbackAfterUpdate);
+				}
 			} else {
 				socket.emit('tocli_invalidForm', validation.errors);
 			}
@@ -134,27 +204,30 @@ function initializeSocket(socket) {
     socket.emit('tocli_allPasswords', allPasswordsList);
 }
 
-function getEncryptedDataOfPasswordById(id) {
+function getEncryptedDataAndSaltOfPasswordById(id) {
 	var res;
 	allPasswordsList.forEach(pass => {
 		if(pass.id == id) {
-			res = pass.hash;
+			res = {
+				hash: pass.hash,
+				salt: pass.salt
+			};
 		}
 	});
 	return res;
 }
 
-function decryptTextIfSocketConnected(encryptedData, socket, providedPassword, callback) {
+function decryptTextIfSocketConnected(encryptedDataAndSalt, socket, providedPassword, callback) {
 	if(socket.status == 'disconnected') {
-		socket.emit('tocli_error', 'You are not connected !');
+		socket.emit('tocli_error', NOT_CONNECTED);
 		callback();
 	} else {
-		decrypt(encryptedData, providedPassword, callback);
+		decrypt(encryptedDataAndSalt.hash, providedPassword, encryptedDataAndSalt.salt, callback);
 	}
 }
 
-function decrypt(encryptedData, password, callback) {
-	pbkdf2(password, serverSalt, 10000, 32, 'sha256').then(function(hash2) {
+function decrypt(encryptedData, password, salt, callback) {
+	pbkdf2(password, salt, 10000, 32, 'sha256').then(function(hash2) {
 		var decryptedData = security.decrypt(encryptedData, hash2)
 		callback(decryptedData);
 	}).catch(function(err) {
@@ -163,29 +236,38 @@ function decrypt(encryptedData, password, callback) {
 	});
 }
 
-function encrypt(plainData, password, callback) {
-	pbkdf2(password, serverSalt, 10000, 32, 'sha256').then(function(hash2) {
+function encrypt(plainData, password, salt, callback) {
+	pbkdf2(password, salt, 10000, 32, 'sha256').then(function(hash2) {
 		var encryptedData = security.encrypt(plainData, hash2);
 		callback(encryptedData);
 	});
 }
 
-function validatePasswordUpsert(data) {
+function validatePasswordUpsert(data, creation) {
 	var valid = true;
 	var errors = [];
+	var checkPasswords = creation;
+	
+	// Update mode : only check passwords if they are provided
+	if(!creation) {
+		checkPasswords = (data.pass || data.confPass);
+	}
 	
 	// Check mandatory fields
-	if(!data.name) {
-		valid = pushErrorInvalid(errors, 'name', 'This field is mandatory');
+	if(creation && !data.name) {
+		valid = pushErrorInvalid(errors, 'name', FIELD_MANDATORY);
 	}
-	if(!data.pass) {
-		valid = pushErrorInvalid(errors, 'pass', 'This field is mandatory');
-	}
-	if(!data.confPass) {
-		valid = pushErrorInvalid(errors, 'confPass', 'This field is mandatory');
+	if(checkPasswords) {
+		if(!data.pass) {
+			valid = pushErrorInvalid(errors, 'pass', FIELD_MANDATORY);
+		}
+		if(!data.confPass) {
+			valid = pushErrorInvalid(errors, 'confPass', FIELD_MANDATORY);
+		}
 	}
 	
-	if(valid) {
+	// Check if the two provided passwords match
+	if(valid && checkPasswords) {
 		if(!(data.pass == data.confPass)) {
 			pushErrorInvalid(errors, 'pass');
 			valid = pushErrorInvalid(errors, 'confPass', 'The passwords don\'t match');
@@ -194,13 +276,13 @@ function validatePasswordUpsert(data) {
 	
 	// Check max Size
 	if(data.name.length > 255) {
-		valid = pushErrorInvalid(errors, 'name', 'This field is too long');
+		valid = pushErrorInvalid(errors, 'name', FIELD_TOO_LONG);
 	}
 	if(data.username.length > 255) {
-		valid = pushErrorInvalid(errors, 'username', 'This field is too long');
+		valid = pushErrorInvalid(errors, 'username', FIELD_TOO_LONG);
 	}
 	if(data.notes.length > 255) {
-		valid = pushErrorInvalid(errors, 'notes', 'This field is too long');
+		valid = pushErrorInvalid(errors, 'notes', FIELD_TOO_LONG);
 	}
 	
 	return {

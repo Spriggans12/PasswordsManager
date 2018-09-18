@@ -2,6 +2,7 @@ CREATE TABLE public.passwords
 (
 	id			bigint,
 	name		character varying(256),
+	salt		character varying(256),
 	hash		character varying(256),
 	username	character varying(256),
 	notes		character varying(256),

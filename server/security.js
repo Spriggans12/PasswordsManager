@@ -8,7 +8,7 @@ module.exports = {
 	 * @param Buffer masterkey is PBKDF2
 	 * @returns String encrypted text, base64 encoded
 	 */
-	encrypt: function (text, masterkey){
+	encrypt: function(text, masterkey){
 		// random initialization vector
 		const iv = crypto.randomBytes(16);
 		// random salt
@@ -32,7 +32,7 @@ module.exports = {
 	* @param Buffer masterkey is PBKDF2
 	* @returns String decrypted (original) text
 	*/
-	decrypt: function (encdata, masterkey){
+	decrypt: function(encdata, masterkey){
 		// base64 decoding
 		const bData = Buffer.from(encdata, 'base64');
 		// convert data to buffers
@@ -48,6 +48,9 @@ module.exports = {
 		// encrypt the given text
 		const decrypted = decipher.update(text, 'binary', 'utf8') + decipher.final('utf8');
 		return decrypted;
-	}
+	},
 
+	randomBytes: function() {
+		return crypto.randomBytes(128).toString('base64');
+	}
 };

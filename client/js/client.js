@@ -52,8 +52,9 @@ socket.on('tocli_decryptedPass', function(data) {
 });
 
 // Server response of encryption string test
-socket.on('tocli_encryptStringTestResult', function(encryptedData) {
-	console.log(encryptedData);
+socket.on('tocli_encryptStringTestResult', function(response) {
+	console.log('SALT : ', response.salt);
+	console.log('HASH : ', response.hash);
 });
 
 // Server response about invalid form
@@ -70,7 +71,6 @@ socket.on('tocli_invalidForm', function(errors) {
 		}
 	});
 });
-
 
 /////////////////////////////////
 // Requests made to the server //
@@ -97,7 +97,11 @@ function askDeletePassword(id) {
 };
 
 function askPasswordCreation(data) {
-	socket.emit('toserv_createPassword', data);
+	socket.emit('toserv_createPassword', data, $("#adminPasswordTextfield").val());
+};
+
+function askPasswordUpdate(data) {
+	socket.emit('toserv_updatePassword', data, $("#adminPasswordTextfield").val());
 };
 
 /////////////////////////////////
@@ -111,8 +115,8 @@ function resetPwdList() {
 		$('#pwdTableBody').append('<tr>' +
 			'<td id="pwdname' + item.id + '">' + item.name + '</td>' +
 			tdPassword(item.id, QUESTION_MARKS) +
-			'<td>' + item.username + '</td>' +
-			'<td>' + item.notes + '</td>' +
+			'<td id="pwdUser' + item.id + '">' + item.username + '</td>' +
+			'<td id="pwdNotes' + item.id + '">' + item.notes + '</td>' +
 			tdActions(item.id) +
 			'</tr>');
 	});
@@ -242,25 +246,56 @@ function popInCreation() {
 	createAndShowPopin(title, bodyHtml, footerHtml, initialization);
 }
 
-function makeFormBody() {
+function popInModification(id) {
+	var title = 'Update this password';
+	var current = {
+		id: id,
+		name: $('#pwdname' + id).text(),
+		user: $('#pwdUser' + id).text(),
+		notes: $('#pwdNotes' + id).text()
+	};
+	var bodyHtml = makeFormBody(current);
+	var footerHtml = '<button class="button buttonPopin" id="abortUpdate">Abort</button><button class="button buttonPopin" id="confirmUpdate">Update</button>'
+	var initialization = function() {
+		$('#abortUpdate').click(function() {
+			$('#popin').hide();
+		});
+		// Send update request
+		$('#confirmUpdate').click(function() {
+			var data = getDataFromForm(id);
+			askPasswordUpdate(data);
+		});
+	};
+	createAndShowPopin(title, bodyHtml, footerHtml, initialization);
+}
+
+function makeFormBody(currentPassword) {
+	var formForUpdate = true;
+	if(!currentPassword) {
+		currentPassword = {};
+		formForUpdate = false;
+	}
 	return '<div id="formUpsert">' +
-			labelAndInput('Name : ', FORM_IDS[0], 'text') +
-			labelAndInput('Password : ', FORM_IDS[1], 'password') +
+			labelAndInput('Name : ', FORM_IDS[0], 'text', currentPassword.name) +
+			(formForUpdate?'<div class="updatePasswordDiv"><b>Fill these to specify a new password</b>' :'') +
+			labelAndInput(formForUpdate? 'New password : ' :'Password : ', FORM_IDS[1], 'password') +
 			labelAndInput('Confirm password : ', FORM_IDS[2], 'password') +
-			labelAndInput('Username : ', FORM_IDS[3], 'text') +
-			labelAndInput('Notes : ', FORM_IDS[4], 'text') +
+			(formForUpdate?'</div>' :'') +
+			labelAndInput('Username : ', FORM_IDS[3], 'text', currentPassword.user) +
+			labelAndInput('Notes : ', FORM_IDS[4], 'text', currentPassword.notes) +
 		'</div>';
 }
 
-function labelAndInput(label, inputId, inputType) {
+function labelAndInput(label, inputId, inputType, value) {
 	return '<div class="block">' +
 		'<label>' + label + '</label>' +
-		'<input id="' + inputId + '" type="' + inputType + '"/>' +
+		'<input id="' + inputId + '" type="' + inputType + '"' + (value?'value="' + value + '"' :'') + '/>' +
 		'</div>';
 }
 
-function getDataFromForm() {
+function getDataFromForm(id) {
 	return {
+		id: id,
 		name: $('#' + FORM_IDS[0]).val(),
 		pass: $('#' + FORM_IDS[1]).val(),
 		confPass: $('#' + FORM_IDS[2]).val(),

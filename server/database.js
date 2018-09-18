@@ -20,9 +20,9 @@ module.exports = {
 			});
 	},
 	
-	addPasswordToDB: function(db, password, callback) {
-		db.none("INSERT INTO passwords(id, name, hash, username, notes) " +
-				"VALUES (nextval('sq_pwd'), ${name}, ${hash}, ${username}, ${notes})"
+	createPassword: function(db, password, callback) {
+		db.none("INSERT INTO passwords(id, name, salt, hash, username, notes) " +
+				"VALUES (nextval('sq_pwd'), ${name}, ${salt}, ${hash}, ${username}, ${notes})"
 				, password)
 			.then(function() {
 				callback();
@@ -32,7 +32,7 @@ module.exports = {
 			});
 	},
 	
-	removePasswordFromDB: function(db, id, callback) {
+	deletePassword: function(db, id, callback) {
 		db.none("DELETE FROM passwords WHERE id = $1", id)
 			.then(function() {
 				callback();
@@ -41,4 +41,17 @@ module.exports = {
 				console.log("ERROR IN DELETE", error);
 			});
 	},
+	
+	updatePassword: function(db, password, updateSaltAndHash, callback) {
+		db.none("UPDATE passwords SET " +
+		"name=${name}, username=${username}, notes=${notes}" +
+		(updateSaltAndHash?", salt=${salt}, hash=${hash}" :"") +
+		" WHERE id=${id}", password)
+			.then(function() {
+				callback();
+			})
+			.catch(function(error) {
+				console.log("ERROR IN UPDATE", error);
+			});
+	}
 }
