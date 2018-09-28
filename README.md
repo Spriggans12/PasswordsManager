@@ -1,3 +1,7 @@
+TODO : 
+
+Generate better encryption / decryption certificates for SSL
+
 
 HOW ENCRYPTION WORKS :
 
@@ -34,3 +38,8 @@ References :
 https://crackstation.net/hashing-security.htm
 
 https://gist.github.com/AndiDittrich/4629e7db04819244e843
+
+Log all things in the Console :
+localStorage.debug = '*'
+
+https://www.zem.fr/creer-un-serveur-https-nodejs-express/

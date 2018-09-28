@@ -1,20 +1,24 @@
-var http = require('http');
+// var http = require('http');
+var https = require('https');
 var path = require("path");
+var fs = require("fs");
 var express = require("express");
 var app = express();
 var PropertiesReader = require('properties-reader');
 var properties = PropertiesReader(__dirname + '/config/config.properties');
 var pgp = require("pg-promise")({});
-// TODO : Sécuriser cette connexion
 const cn = {
-	host: 'localhost',
-	port: 5432,
-	database: 'passwords',
-	user: 'passwd',
-	password: 'passwd'
+	host: properties.get('database.host'),
+	port: properties.get('database.port'),
+	database: properties.get('database.database'),
+	user: properties.get('database.user'),
+	password: properties.get('database.password')
 };
 var db = pgp(cn);
-var server = http.createServer(app);
+var server = https.createServer({
+		key: fs.readFileSync('key.pem'),
+		cert: fs.readFileSync('cert.pem')
+	}, app);
 var io = require('socket.io').listen(server);
 app.use(express.static(__dirname + '/client'));
 app.get('/', function(req, res) {
@@ -191,7 +195,7 @@ io.sockets.on('connection', function (socket) {
 	});
 });
 
-server.listen(8080);
+server.listen(8000);
 
 
 /////////////////////////////////
