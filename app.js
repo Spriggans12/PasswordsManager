@@ -43,7 +43,6 @@ var allPasswordsList = [];
 database.loadAllPasswords(db, data => { allPasswordsList = data; });
 
 var adminSalt = properties.get('admin.salt')
-// TODO : make these roll ?
 var decryptedDummyText = properties.get('security.dummyText');
 var encryptedDummyText = properties.get('security.dummyTextEncrypted');
 
