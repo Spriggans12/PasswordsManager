@@ -28,7 +28,7 @@ Note : These are Windows commands, but removing the ```winpty``` part should mak
 
 ```winpty openssl rsa -in passKey.pem -out key.pem```
 
-Replace ```key.pem``` and ```cert.pem``` with the ones in the repository.
+Place the files ```key.pem``` and ```cert.pem``` in the root location (next to index.html).
 
 __Master password setting__
 
