@@ -14,7 +14,7 @@ TODO
 
 ### Launching the server
 
-Install dependencies using ``` npm i <dependency_name> ``` and start the server with ``` node app.js ```
+Install dependencies using ```npm i <dependency_name>``` and start the server with ```node app.js```.
 
 
 ## Server API
@@ -22,9 +22,9 @@ Install dependencies using ``` npm i <dependency_name> ``` and start the server 
 This is the list of message that are sent through socket.io's messages.<br/>
 The server will either send or receive messages. The client must adapt its UI to make good use of these messages.<br/>
 <br/>
-First thing to understand is that a socket is either connected or disconnected.<br/>
-Some server messages won't do much if the client socket is disconnected (only returning an error message).
-In order to connect, a client must provide the right master password. The server will then acknowledge the socket as connected.
+First thing to understand is that a socket is either ```connected``` or ```disconnected```.<br/>
+Some server messages won't do much if the client socket is ```disconnected``` (only returning an error message).<br/>
+In order to connect, a client must provide the right master password. The server will then acknowledge the socket as ```connected```.
 
 
 ### Messages received by the server (sent by clients)
@@ -107,8 +107,8 @@ In order to connect, a client must provide the right master password. The server
 	* __Description :__<br/>
 	The client asks the server to encrypt a string.<br/>
 	The server generates a random salt and encrypts this string.<br/>
-	This is used for the initial set-up only.<br/>
-	The string we're talking about is ```decryptedDummyText```. It is a server variable read from the property ```security.dummyText``` of the configuration file.
+	The string we're talking about is ```decryptedDummyText```. It is a server variable read from the property ```security.dummyText``` of the configuration file.<br/>
+	This is used for the initial set-up only.
 		
 	* __Message parameter :__<br/>
 	```providedPassword``` : the master password to use to encrypt the string.
@@ -119,7 +119,69 @@ In order to connect, a client must provide the right master password. The server
 
 ### Messages sent by the server to the client
 
-TODO
+* **_Server's notification_** : ```tocli_message```
+	* __Description :__<br/>
+	The server notifies the client of a message.
+		
+	* __Message parameter :__<br/>
+	```message``` : The server's notification.
+
+* **_Server's error message_** : ```tocli_error```
+	* __Description :__<br/>
+	The server notifies the client of an error.
+		
+	* __Message parameter :__<br/>
+	```message``` : The server's error message.
+
+* **_Server's success message_** : ```tocli_success```
+	* __Description :__<br/>
+	The server notifies the client that something worked.
+		
+	* __Message parameter :__<br/>
+	```message``` : The server's success message.	
+	
+* **_Successful login_** : ```tocli_onConnectionOK```
+	* __Description :__<br/>
+	The server tells the client that it is now connected.
+		
+	* __Message parameters :__<br/>
+	No parameters.
+	
+* **_Successful disconnection_** : ```tocli_onDisconnectionOK```
+	* __Description :__<br/>
+	The server tells the client that it has been disconnected.
+		
+	* __Message parameters :__<br/>
+	No parameters.
+	
+* **_Passwords list recovery_** : ```tocli_allPasswords```
+	* __Description :__<br/>
+	The server sends the list of all the passwords in the database to the client.
+		
+	* __Message parameter :__<br/>
+	```allPasswordsList``` : A Json list containing all the password of the database. The clear password is not provided. The recovered fields are : ```id```, ```name```, ```username``` and ```notes```.	
+	
+* **_Reception of clear data of a password_** : ```tocli_decryptedPass```
+	* __Description :__<br/>
+	The server sends decrypted data of a password.
+		
+	* __Message parameter :__<br/>
+	```data``` : A Json containing the password data. The fields are : ```id``` and ```clearValue```.	
+	
+* **_An update or create request was invalid because of the provided data_** : ```tocli_invalidForm```
+	* __Description :__<br/>
+	The server sends decrypted data of a password.
+		
+	* __Message parameter :__<br/>
+	```errors``` : A Json list containing the causes of the invalidation. The fields are : ```field``` and ```cause```.
+	
+* **_Reception of an encrypted string_** : ```tocli_encryptStringTestResult```
+	* __Description :__<br/>
+	The server sends the encrypted string of ```decryptedDummyText``` using a server-generated salt.
+		
+	* __Message parameter :__<br/>
+	```response``` : A Json containing the encrypted string and the generated salt. The fields are : ```salt``` and ```hash```.
+	
 
 ## How things work
 
