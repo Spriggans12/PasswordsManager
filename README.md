@@ -9,8 +9,36 @@ You need to provide a master password to retrieve your passwords.
 
 ### Set-up
 
-TODO
+It is mandatory to set-up your own configuration to make the app secure.
 
+__Creation of the postgreSQL database__
+
+* Execute the script ```createTables.sql``` in a database of yours. User must be ```passwd```.
+* Edit the file ```config.properties```, and configure the ```database.*``` properties to match your settings.
+
+__Certificate generation__
+
+Note : These are Windows commands, but removing the ```winpty``` part should make it universally compatible.
+
+* Create a signed certificate for your https connection (change the days according to your needs)
+
+```winpty openssl req -x509 -newkey rsa:2048 -keyout passKey.pem -out cert.pem -days 365```
+
+* Remove the certificate's password
+
+```winpty openssl rsa -in passKey.pem -out key.pem```
+
+Replace ```key.pem``` and ```cert.pem``` with the ones in the repository.
+
+__Master password setting__
+
+* If you want, you may change the value of ```security.dummyText``` in the configuration file.
+* Launch the app.
+* Connect to it.
+* Using the console, run ```encryptStringTest('<MY_MASTER_PASSWORD>')```.
+* In the configuration file, change the values of ```admin.salt``` and ```security.dummyTextEncrypted``` according to the result you got from the server.
+* Restart the app.
+* Enjoy.
 
 ### Launching the server
 
