@@ -159,21 +159,22 @@ In order to connect, a client must provide the right master password. The server
 	The server sends the list of all the passwords in the database to the client.
 		
 	* __Message parameter :__<br/>
-	```allPasswordsList``` : A Json list containing all the password of the database. The clear password is not provided. The recovered fields are : ```id```, ```name```, ```username``` and ```notes```.	
+	```allPasswordsList``` : A Json list containing all the passwords of the database. The clear passwords are never provided. The fields in the list are : ```id```, ```name```, ```username``` and ```notes```.	
 	
-* **_Reception of clear data of a password_** : ```tocli_decryptedPass```
+* **_Reception of the clear value of a password_** : ```tocli_decryptedPass```
 	* __Description :__<br/>
-	The server sends decrypted data of a password.
+	The server sends the decrypted value of a password.
 		
 	* __Message parameter :__<br/>
 	```data``` : A Json containing the password data. The fields are : ```id``` and ```clearValue```.	
 	
-* **_An update or create request was invalid because of the provided data_** : ```tocli_invalidForm```
+* **_A create or update request has failed because the provided data was invalid_** : ```tocli_invalidForm```
 	* __Description :__<br/>
-	The server sends decrypted data of a password.
+	The server could not insert or update a password because the form was invalid.<br/>
+	The reasons are received by the client.
 		
 	* __Message parameter :__<br/>
-	```errors``` : A Json list containing the causes of the invalidation. The fields are : ```field``` and ```cause```.
+	```errors``` : A Json list containing the causes of the invalidation. The fields in the list are : ```field``` and ```cause```.
 	
 * **_Reception of an encrypted string_** : ```tocli_encryptStringTestResult```
 	* __Description :__<br/>
