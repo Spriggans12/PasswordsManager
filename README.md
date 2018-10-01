@@ -47,7 +47,7 @@ Install dependencies using ```npm i <dependency_name>``` and start the server wi
 
 ## Server API
 
-This is the list of message that are sent through socket.io's messages.<br/>
+This is the list of the messages that are sent through socket.io's sockets.<br/>
 The server will either send or receive messages. The client must adapt its UI to make good use of these messages.<br/>
 <br/>
 First thing to understand is that a socket is either ```connected``` or ```disconnected```.<br/>
